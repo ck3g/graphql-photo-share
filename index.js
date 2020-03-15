@@ -8,7 +8,7 @@ require('dotenv').config()
 const { readFileSync } = require('fs')
 
 const typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
-const resolvers = require('./resolvers')
+const resolvers = require('./src/resolvers')
 
 
 async function start() {

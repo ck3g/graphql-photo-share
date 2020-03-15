@@ -1,6 +1,6 @@
 
 const { GraphQLScalarType } = require('graphql')
-const { authorizeWithGitHub } = require('../src/auth.js')
+const { authorizeWithGitHub } = require('../auth.js')
 require('dotenv').config()
 
 var _id = 0
