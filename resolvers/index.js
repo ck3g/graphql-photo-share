@@ -1,5 +1,7 @@
 
 const { GraphQLScalarType } = require('graphql')
+const { authorizeWithGitHub } = require('../src/auth.js')
+require('dotenv').config()
 
 var _id = 0
 // var photos = []
@@ -63,6 +65,7 @@ const resolvers = {
         .find()
         .toArray()
   },
+
   Mutation: {
     postPhoto(parent, args) {
       var newPhoto = {
@@ -74,8 +77,40 @@ const resolvers = {
       photos.push(newPhoto)
 
       return newPhoto
+    },
+
+    async githubAuth(parent, { code }, { db }) {
+      let {
+        message,
+        access_token,
+        avatar_url,
+        login,
+        name
+      } = await authorizeWithGitHub({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_SECRET,
+        code
+      })
+
+      if (message) {
+        throw new Error(message)
+      }
+
+      let latestUserInfo = {
+        name,
+        githubLogin: login,
+        githubToken: access_token,
+        avatar: avatar_url
+      }
+
+      const { ops:[user] } = await db
+        .collection('users')
+        .replaceOne({ githubLogin: login }, latestUserInfo, { upsert: true })
+
+      return { user, token: access_token }
     }
   },
+
   Photo: {
     url: parent => `http://yourside.com/img/${parent.id}.jpg`,
     postedBy: parent => {
@@ -86,6 +121,7 @@ const resolvers = {
       .map(tag => tag.userID)
       .map(userID => users.find(u => u.githubLogin == userID))
   },
+
   User: {
     postedPhotos: parent => {
       return photos.filter(p => p.githubUser === parent.githubLogin)
@@ -95,6 +131,7 @@ const resolvers = {
       .map(tag => tag.photoID)
       .map(photoID = photos.find(p => p.id === photoID))
   },
+
   DateTime: new GraphQLScalarType({
     name: 'DateTime',
     description: 'A valid date time value.',
