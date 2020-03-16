@@ -69,14 +69,19 @@ const resolvers = {
   },
 
   Mutation: {
-    postPhoto(parent, args) {
+    async postPhoto(parent, args, { db, currentUser }) {
+      if (!currentUser) {
+        throw new Error('only an authorized user can post a photo')
+      }
+
       var newPhoto = {
-        id: _id++,
         ...args.input,
+        userID: currentUser.githubLogin,
         created: new Date()
       }
 
-      photos.push(newPhoto)
+      const { insertedIds } = await db.collection('photos').insert(newPhoto)
+      newPhoto.id = insertedIds[0]
 
       return newPhoto
     },
@@ -114,10 +119,13 @@ const resolvers = {
   },
 
   Photo: {
-    url: parent => `http://yourside.com/img/${parent.id}.jpg`,
-    postedBy: parent => {
-      return users.find(u => u.githubLogin === parent.githubUser)
-    },
+    id: parent => parent.id || parent._id,
+
+    url: parent => `img/photos/${parent._id}.jpg`,
+
+    postedBy: (parent, args, { db }) =>
+      db.collection('users').findOne({ githubLogin: parent.userID }),
+
     taggedUsers: parent => tags
       .filter(tag => tag.photoID === parent.id)
       .map(tag => tag.userID)
