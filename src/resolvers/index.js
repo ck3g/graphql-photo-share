@@ -3,6 +3,8 @@ const { GraphQLScalarType } = require('graphql')
 const { authorizeWithGitHub } = require('../auth.js')
 require('dotenv').config()
 
+const fetch = require('node-fetch')
+
 var _id = 0
 // var photos = []
 
@@ -115,6 +117,37 @@ const resolvers = {
         .replaceOne({ githubLogin: login }, latestUserInfo, { upsert: true })
 
       return { user, token: access_token }
+    },
+
+    fakeUserAuth: async (parent, { githubLogin }, { db }) => {
+      var user = await db.collection('users').findOne({ githubLogin })
+
+      if (!user) {
+        throw new Error(`Cannot find user with githubLogin "${githubLogin}"`)
+      }
+
+      return {
+        token: user.githubToken,
+        user
+      }
+    },
+
+    addFakeUsers: async (root, { count }, { db }) => {
+      var randomUserApi = `https://randomuser.me/api/?results=${count}`
+
+      var { results } = await fetch(randomUserApi)
+        .then(res => res.json())
+
+      var users = results.map(r => ({
+        githubLogin: r.login.username,
+        name: `${r.name.first} ${r.name.last}`,
+        avatar: r.picture.thumbnail,
+        githubToken: r.login.sha1
+      }))
+
+      await db.collection('users').insert(users)
+
+      return users
     }
   },
 

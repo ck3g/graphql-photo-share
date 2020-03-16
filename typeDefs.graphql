@@ -49,4 +49,6 @@ type Query {
 type Mutation {
   postPhoto(input: PostPhotoInput!): Photo!
   githubAuth(code: String!): AuthPayload!
+  fakeUserAuth(githubLogin: ID!): AuthPayload!
+  addFakeUsers(count: Int = 1): [User!]!
 }
