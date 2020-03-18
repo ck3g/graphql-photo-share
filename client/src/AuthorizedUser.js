@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { withRouter } from 'react-router-dom'
-import { Mutation } from 'react-apollo'
+import { Query, Mutation } from 'react-apollo'
 import { gql } from 'apollo-boost'
 import { ROOT_QUERY } from './App'
 
@@ -9,6 +9,26 @@ const GITHUB_AUTH_MUTATION = gql`
     githubAuth(code: $code) { token }
   }
 `
+
+const Me = ({ logout, requestCode, signingIn }) =>
+  <Query query={ROOT_QUERY}>
+    {
+      ({ loading, data }) => data && data.me ?
+        <CurrentUser {...data.me} logout={logout} /> :
+        loading ?
+          <p>loading...</p> :
+          <button onClick={requestCode} disabled={signingIn}>
+            Sign In with GitHub
+          </button>
+    }
+  </Query>
+
+const CurrentUser = ({ name, avatar, logout }) =>
+  <div>
+    <img src={avatar} width={48} height={48} alt="" />
+    <h1>{name}</h1>
+    <button onClick={logout}>logout</button>
+  </div>
 
 class AuthorizedUser extends Component {
   state = { signingIn: false }
@@ -40,9 +60,9 @@ class AuthorizedUser extends Component {
           mutation => {
             this.githubAuthMutation = mutation
             return (
-              <button onClick={this.requestCode} disabled={this.state.signingIn}>
+              <Me logout={() => localStorage.removeItem('token')} requestCode={this.requestCode} signingIn={this.state.signingIn}>
                 Sign in with GitHub
-              </button>
+              </Me>
             )
           }
         }
