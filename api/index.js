@@ -1,4 +1,4 @@
-const { ApolloServer } = require('apollo-server-express')
+const { ApolloServer, PubSub } = require('apollo-server-express')
 const express = require('express')
 const expressPlayground = require('graphql-playground-middleware-express').default
 
@@ -23,26 +23,33 @@ async function start() {
   )
   const db = client.db()
 
+  const pubsub = new PubSub()
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: async ({ req }) => {
-      const githubToken = req.headers.authorization
+    context: async ({ req, connection }) => {
+      const githubToken = req ?
+        req.headers.authorization :
+        connection.context.Authorization
+
       const currentUser = await db.collection('users').findOne({ githubToken })
 
-      return { db, currentUser }
+      return { db, currentUser, pubsub }
     }
   })
 
   server.applyMiddleware({ app })
 
   app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'))
-  app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
+  app.get('/playground', expressPlayground({ endpoint: '/graphql', subscriptionsEndpoint: '/graphql' }))
 
-  const httpServer = createServer(app)
+  const httpServer = createServer(app);
   server.installSubscriptionHandlers(httpServer)
 
-  httpServer.listen({ port: 4000 }, () => console.log(`GraphQL Server running @ http://localhost:4000${server.graphqlPath}`))
+  httpServer.listen({ port: 4000 }, () => {
+    console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
+    console.log(`🚀 Subscriptions ready at ws://localhost:4000${server.subscriptionsPath}`)
+  })
 }
 
 start()
