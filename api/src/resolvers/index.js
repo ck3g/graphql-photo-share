@@ -90,7 +90,7 @@ const resolvers = {
       return newPhoto
     },
 
-    async githubAuth(parent, { code }, { db }) {
+    async githubAuth(parent, { code }, { db, pubsub }) {
       let {
         message,
         access_token,
@@ -114,9 +114,11 @@ const resolvers = {
         avatar: avatar_url
       }
 
-      const { ops:[user] } = await db
+      const { ops:[user], result } = await db
         .collection('users')
         .replaceOne({ githubLogin: login }, latestUserInfo, { upsert: true })
+
+      result.upserted && pubsub.publish('user-added', { newUser: user })
 
       return { user, token: access_token }
     },
@@ -134,7 +136,7 @@ const resolvers = {
       }
     },
 
-    addFakeUsers: async (root, { count }, { db }) => {
+    addFakeUsers: async (root, { count }, { db, pubsub }) => {
       var randomUserApi = `https://randomuser.me/api/?results=${count}`
 
       var { results } = await fetch(randomUserApi)
@@ -149,6 +151,8 @@ const resolvers = {
 
       await db.collection('users').insert(users)
 
+      users.forEach((newUser) => pubsub.publish('user-added', { newUser }))
+
       return users
     }
   },
@@ -157,6 +161,10 @@ const resolvers = {
     newPhoto: {
       subscribe: (parent, args, { pubsub }) =>
         pubsub.asyncIterator('photo-added')
+    },
+    newUser: {
+      subscribe: (parent, args, { pubsub }) =>
+        pubsub.asyncIterator('user-added')
     }
   },
 
