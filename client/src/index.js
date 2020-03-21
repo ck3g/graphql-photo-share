@@ -27,7 +27,7 @@ if (localStorage['apollo-cache-persist']) {
   cache.restore(cacheData)
 }
 
-const httpLink = new HttpLink({ url: 'http://localhost:4000/graphql' })
+const httpLink = new HttpLink({ uri: 'http://localhost:4000/graphql' })
 
 const wsLink = new WebSocketLink({
   uri: 'ws://localhost:4000/graphql',
@@ -41,6 +41,8 @@ const authLink = new ApolloLink((operation, forward) => {
       authorization: localStorage.getItem('token')
     }
   }))
+
+  return forward(operation)
 })
 
 const httpAuthLink = authLink.concat(httpLink)
@@ -51,7 +53,7 @@ const link = split(
     return kind === 'OperationDefinition' && operation === 'subscription'
   },
   wsLink,
-  httpLink
+  httpAuthLink
 )
 
 const client = new ApolloClient({ cache, link })
