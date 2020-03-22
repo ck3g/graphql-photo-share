@@ -1,5 +1,7 @@
 scalar DateTime
 
+scalar Upload
+
 enum PhotoCategory {
   SELFIE
   PORTRAIT
@@ -31,6 +33,7 @@ input PostPhotoInput {
   name: String!
   category: PhotoCategory=PORTRAIT
   description: String
+  file: Upload!
 }
 
 type AuthPayload {

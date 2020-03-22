@@ -1,9 +1,11 @@
 
 const { GraphQLScalarType } = require('graphql')
 const { authorizeWithGitHub } = require('../auth.js')
+// const { uploadStream } = require ('../lib') // not yet obvious why do we need that. I assume that's a missing part in the book
 require('dotenv').config()
 
 const fetch = require('node-fetch')
+const path = require('path')
 
 const resolvers = {
   Query: {
@@ -42,6 +44,13 @@ const resolvers = {
 
       const { insertedIds } = await db.collection('photos').insert(newPhoto)
       newPhoto.id = insertedIds[0]
+
+      var toPath = path.join(
+        __dirname, '..', 'assets', 'photos', `${newPhoto.id}.jpg`
+      )
+
+      const { stream } = await args.input.file
+      await uploadFile(input.file, toPath)
 
       pubsub.publish('photo-added', { newPhoto })
 
