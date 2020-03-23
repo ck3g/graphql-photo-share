@@ -1,6 +1,7 @@
 const { ApolloServer, PubSub } = require('apollo-server-express')
 const express = require('express')
 const expressPlayground = require('graphql-playground-middleware-express').default
+const depthLimit = require('graphql-depth-limit')
 
 const { MongoClient } = require('mongodb')
 require('dotenv').config()
@@ -27,6 +28,7 @@ async function start() {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    validationRules: [depthLimit(5)],
     context: async ({ req, connection }) => {
       const githubToken = req ?
         req.headers.authorization :
