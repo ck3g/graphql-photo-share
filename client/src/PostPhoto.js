@@ -39,7 +39,7 @@ export default class PostPhoto extends Component {
           style={{ margin: '10px' }}
           placeholder="photo description..."
           value={this.state.description}
-          onClick={({ target }) => this.setState({ description: target.value })}
+          onChange={({ target }) => this.setState({ description: target.value })}
         />
 
         <select

@@ -1,7 +1,5 @@
 scalar DateTime
 
-scalar Upload
-
 enum PhotoCategory {
   SELFIE
   PORTRAIT
