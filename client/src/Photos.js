@@ -7,7 +7,7 @@ const Photos = () =>
     {
       ({ loading, data }) => loading ?
         <p>loading...</p> :
-        data.allPhotos.map(photo => <img key={photo.id} src={photo.url} alt={photo.name} width={350} />)
+        data.allPhotos.map(photo => <img key={photo.id} src={`http://localhost:4000/${photo.url}`} alt={photo.name} width={350} />)
     }
   </Query>
 

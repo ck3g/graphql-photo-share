@@ -1,11 +1,22 @@
 
 const { GraphQLScalarType } = require('graphql')
 const { authorizeWithGitHub } = require('../auth.js')
-// const { uploadStream } = require ('../lib') // not yet obvious why do we need that. I assume that's a missing part in the book
 require('dotenv').config()
 
 const fetch = require('node-fetch')
 const path = require('path')
+const fs = require('fs')
+
+const uploadStream = (stream, path) =>
+  new Promise((resolve, reject) => {
+    stream.on('error', error => {
+      if (stream.truncated) {
+        fs.unlinkSync(path)
+      }
+      reject(error)
+    }).on('end', resolve)
+      .pipe(fs.createWriteStream(path))
+  })
 
 const resolvers = {
   Query: {
@@ -46,11 +57,12 @@ const resolvers = {
       newPhoto.id = insertedIds[0]
 
       var toPath = path.join(
-        __dirname, '..', 'assets', 'photos', `${newPhoto.id}.jpg`
+        __dirname, '..', '..', 'assets', 'photos', `${newPhoto.id}.jpg`
       )
 
-      const { stream } = await args.input.file
-      await uploadFile(input.file, toPath)
+      const { createReadStream } = await args.input.file
+      const stream = createReadStream()
+      await uploadStream(stream, toPath)
 
       pubsub.publish('photo-added', { newPhoto })
 
@@ -81,7 +93,7 @@ const resolvers = {
         avatar: avatar_url
       }
 
-      const { ops:[user], result } = await db
+      const { ops: [user], result } = await db
         .collection('users')
         .replaceOne({ githubLogin: login }, latestUserInfo, { upsert: true })
 
